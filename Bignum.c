@@ -6,10 +6,10 @@
 
 Bigint * BIn(char * snum)
 {
-	Bigint *bnum = (Bigint *)malloc(sizeof(Bigint));
+	Bigint *Bnum = (Bigint *)malloc(sizeof(Bigint));
 	char *snum_t;  // 십진수를 역순으로 저장
 	char *bnum_t;  // 이진수를 역순으로 저장
-	int slen, blen, blen_t, biglen;
+	int slen, blen, blen_t, Blen;
 	int i, j;
 	int n;  // snum의 실시간 최대길이
 	int temp;
@@ -49,30 +49,30 @@ Bigint * BIn(char * snum)
 	while (blen%16 != 0)
 		bnum_t[blen++] = 0;   // 
 
-	// 2진수를 bnum에 저장 //
-	biglen = (int)ceil(blen / 16.0);
-	bnum->len = biglen;
-	bnum->num = (unsigned int *)calloc(biglen, sizeof(unsigned int));
+	// 2진수를 Bnum에 저장 //
+	Blen = (int)ceil(blen / 16.0);
+	Bnum->len = Blen;
+	Bnum->num = (unsigned int *)calloc(Blen, sizeof(unsigned int));
 	
-	for (i=0; i<biglen; i++)
+	for (i=0; i<Blen; i++)
 	{
 		for (j=0, temp=0; j<16; j++)
 			temp += bnum_t[16*i+j] << j;
-		bnum->num[i] = temp;
+		Bnum->num[i] = temp;
 	}
 
 	if (snum[0] == '-')
-		bnum->sign = NEG;
+		Bnum->sign = NEG;
 	else if (snum[0] == '+')
-		bnum->sign = POS;
+		Bnum->sign = POS;
 	else      // 부호 안붙음
-		bnum->sign = POS;
+		Bnum->sign = POS;
 
 	// 동적 메모리 해제 //
 	free(snum_t);
 	free(bnum_t);
 	
-	return bnum;
+	return Bnum;
 }
 
 
