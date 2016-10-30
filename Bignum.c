@@ -76,6 +76,27 @@ Bigint * BIn(char * snum)
 }
 
 
+void carryIn(unsigned char *snum, int *len)
+{
+	int i;
+	int n = *len;
+
+	snum[n] = 0;
+
+	// carry in 수행(각 자리마다 두 자리 carry 가능) //
+	for (i=0; i<n+1; i++)
+	{
+		snum[i+1] += snum[i] / 10;
+		snum[i] = snum[i] % 10;
+	}
+
+	// 가장 높은 자리수에서 carry발생시 len 업뎃 //
+	if (snum[n+1] > 0)
+		*len = n+2;
+	else if (snum[n+1] == 0 && snum[n] > 0)
+		*len = n+1;
+}
+
 char * BOut(Bigint *Bnum)
 {
 	unsigned char *snum_t;  // 임시 snum
@@ -138,4 +159,28 @@ char * BOut(Bigint *Bnum)
 	snum[n] = '\0';
 	snum = strrev(snum);
 	return snum;
+}
+
+void BbinPrint(Bigint *Bnum)
+{
+	int Blen = Bnum->len;
+	int i, j;
+
+	// 16자리씩 출력 (4+4+4+4) //
+	for (i=0; i<Blen; i++)
+	{
+		for (j=0; j<4; j++)
+			printf("%d",(Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		putchar(' ');
+		for (j=4; j<8; j++)
+			printf("%d",(Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		putchar(' ');
+		for (j=8; j<12; j++)
+			printf("%d",(Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		putchar(' ');
+		for (j=12; j<16; j++)
+			printf("%d",(Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		putchar(' ');
+		putchar('\n');
+	}
 }
