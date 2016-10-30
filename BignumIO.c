@@ -4,9 +4,8 @@
 #include <string.h>
 #include <math.h>
 
-Bigint * BIn(char * snum)
+Bigint * BIn(Bigint *Bnum, char * snum)
 {
-	Bigint *Bnum = (Bigint *)malloc(sizeof(Bigint));
 	char *snum_t;  // 십진수를 역순으로 저장
 	char *bnum_t;  // 이진수를 역순으로 저장
 	int slen, blen, blen_t, Blen;
@@ -97,10 +96,9 @@ void carryIn(unsigned char *snum, int *len)
 		*len = n+1;
 }
 
-char * BOut(Bigint *Bnum)
+char * BOut(Bigint *Bnum, char *snum)
 {
 	unsigned char *snum_t;  // 임시 snum
-	char *snum;
 	int slen, blen, Blen;
 	int i, j, k;
 	int n;   // snum의 실시간 최대길이
@@ -155,6 +153,7 @@ char * BOut(Bigint *Bnum)
 
 	snum = (char *)malloc((slen+1) * sizeof(char));
 	strcpy(snum, (char *)snum_t);
+	free(snum_t);
 
 	snum[n] = '\0';
 	snum = strrev(snum);
