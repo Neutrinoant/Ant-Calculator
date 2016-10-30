@@ -76,6 +76,66 @@ Bigint * BIn(char * snum)
 }
 
 
-char * BOut(Bigint *bnum)
+char * BOut(Bigint *Bnum)
 {
+	unsigned char *snum_t;  // 임시 snum
+	char *snum;
+	int slen, blen, Blen;
+	int i, j, k;
+	int n;   // snum의 실시간 최대길이
+
+	Blen = Bnum->len;
+	blen = 16 * Blen;
+	slen = (int)floor(blen * log10(2.0)) + 1;  // blen, slen에 관한 특수한 부등식 사용
+	snum_t = (unsigned char *)calloc(slen, sizeof(unsigned char));
+	n = 1;
+
+	snum = (char *)malloc((slen+1) * sizeof(char));
+
+	// 16자리씩 십진수로 변환 //
+	for (i=0; i<Blen; i++)
+	{
+		for (j=0; j<4; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+		
+		for (j=4; j<8; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+		
+		for (j=8; j<12; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+		
+		for (j=12; j<16; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+	}
+
+	// 아스키코드 숫자로 변경 //
+	for (i=0; i<n; i++)
+		snum_t[i] += '0';
+
+	snum = (char *)malloc((slen+1) * sizeof(char));
+	strcpy(snum, (char *)snum_t);
+
+	snum[n] = '\0';
+	snum = strrev(snum);
+	return snum;
 }
