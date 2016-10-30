@@ -29,7 +29,10 @@ typedef struct {
 Bigint * BIn(char * snum);
 
 // 2진수 -> 10진수 변환하여 반환 //
-char * BOut(Bigint *bnum);
+char * BOut(Bigint *Bnum);
+
+// 큰 수를 2진수로 한 line에 16자리씩 출력 //
+void BbinPrint(Bigint *Bnum);
 
 // 두 양수 덧셈 //
 Bigint * BAdd(Bigint *result, Bigint *bnum1, Bigint *bnum2);
