@@ -34,19 +34,21 @@ char * BOut(Bigint *Bnum);
 // 큰 수를 2진수로 한 line에 16자리씩 출력 //
 void BbinPrint(Bigint *Bnum);
 
+
+
 // 두 양수 덧셈 //
-Bigint * BAdd(Bigint *result, Bigint *bnum1, Bigint *bnum2);
+Bigint * BAdd(Bigint *result, Bigint *B1, Bigint *B2);
 
 // 두 양수 뺄셈 //
-Bigint * BSub(Bigint *result, Bigint *bnum1, Bigint *bnum2);
+Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2);
 
 // 두 수 곱셈 //
-Bigint * BMul(Bigint *result, Bigint *bnum1, Bigint *bnum2);
+Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2);
 
 // 두 수 나눗셈(몫 반환) //
-Bigint * BDiv(Bigint *result, Bigint *bnum1, Bigint *bnum2);
+Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2);
 
 // 두 수 모듈러 //
-Bigint * BMod(Bigint *result, Bigint *bnum1, Bigint *bnum2);
+Bigint * BMod(Bigint *result, Bigint *B1, Bigint *B2);
 
 #endif
