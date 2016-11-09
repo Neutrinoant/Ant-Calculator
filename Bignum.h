@@ -37,7 +37,15 @@ char * BOut(Bigint *Bnum, char *snum);
 // 큰 수를 2진수로 한 line에 16자리씩 출력 //
 void BbinPrint(Bigint *Bnum);
 
+// 큰 수를 10진수로 출력 //
+void BPrint(Bigint *Bnum);
 
+
+// 두 큰 정수의 비교
+//   1 : B1이 더 큼
+//   0 : 두 수가 같음
+//  -1 : B2이 더 큼
+int BCompare(Bigint *B1, Bigint *B2);
 
 // 두 양수 덧셈 //
 Bigint * BAdd(Bigint *result, Bigint *B1, Bigint *B2);
