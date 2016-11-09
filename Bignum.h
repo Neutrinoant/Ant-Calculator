@@ -15,7 +15,7 @@ typedef struct {
 	unsigned int *num;
 
 	/*
-	 * 수의 길이를 저장 (배열의 인덱스 n - 1)
+	 * 수의 길이를 저장 (배열의 인덱스 n + 1)
 	 */
 	int len;
 
@@ -24,6 +24,9 @@ typedef struct {
 	 */
 	int sign;
 } Bigint;
+
+// 아래 모든 함수를 테스트 //
+int BTest(void);
 
 // 10진수(string) -> 2진수(bigint) 변환하여 저장 //
 Bigint * BIn(Bigint *Bnum, char * snum);
