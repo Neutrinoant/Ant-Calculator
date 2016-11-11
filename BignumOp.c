@@ -60,7 +60,8 @@ Bigint * BAdd(Bigint *result, Bigint *B1, Bigint *B2)
 		for (i=len2; i<len1; i++)
 			n[i] = n1[i];
 	}
-		
+	
+	// 초기화된 값이 있으면 덮어씌움 //
 	if (result->num != NULL)
 	{
 		free(result->num);
@@ -68,15 +69,12 @@ Bigint * BAdd(Bigint *result, Bigint *B1, Bigint *B2)
 	}
 	result->len = (flag)? B2->len : B1->len;
 	result->sign = POS;
-	BcarryIn(result);
+	BcarryIn(result);  // 자리올림
 
 	return result;
 }
 
-// 두 큰 정수의 비교
-//   1 : B1이 더 큼
-//   0 : 두 수가 같음
-//  -1 : B2이 더 큼
+// 두 큰 정수의 비교 //
 int BCompare(Bigint *B1, Bigint *B2)
 {
 	unsigned int *p1, *p2;
@@ -122,7 +120,7 @@ Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2)
 	int flag;
 	
 	// 두 수의 크기 비교
-	flag = BCompare(B1, B2);                 //(B1->len < B2->len)? 1 : 0;
+	flag = BCompare(B1, B2);
 
 	if (flag == 1) {
 		nb = B1->num, ns = B2->num;
@@ -135,4 +133,15 @@ Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2)
 	n = (unsigned int *)calloc(lenb, sizeof(unsigned int));
 
 	// 뺄셈 //
+	n[0] = nb[0] - ns[0] + 0x0000FFFF;         // 큰수-작은수+carry(받음)
+
+	for (i=0; i<lens; i++)
+		n[i] = nb[i] - ns[i] + 0x0000FFFF - 1; // 큰수-작은수+carry(받음)-carry(줌)
+	
+	for (i=lens; i<lenb-1; i++)
+		n[i] = nb[i] + 0x0000FFFF - 1;         // 큰수+carry(받음)-carry(줌)
+
+	n[lenb-1] = nb[lenb-1] - 1;        // 큰수-carry(줌)
+
+
 }
