@@ -9,24 +9,30 @@
 typedef struct {
 	/*
 	 * 수를 저장할 배열.
-	 * 각 인덱스에 2^15-1 까지 저장 가능하며 (2^16 진법)
-	 * Little endian으로 저장.
+	 * 1. 각 인덱스에 2^15-1 까지 저장 가능하며 (2^16 진법)
+	 *    Little endian으로 저장.
+	 * 2. 0은 num[0]=0 으로 저장 (데이터가 존재해야 연산 가능)
 	 */
 	unsigned int *num;
 
 	/*
 	 * 수의 길이를 저장 (배열의 인덱스 n + 1)
+	 * 1. 0의 길이는 1로 정의 (0~9, 10~99, 등으로 구분 합리적)
 	 */
 	int len;
 
 	/*
 	 * 부호를 저장 (POS, NEG, ZRO)
+	 * 1. 0의 부호는 ZRO로 정의 (부호 연산에 유리함)
 	 */
 	int sign;
 } Bigint;
 
 // 아래 모든 함수를 테스트 //
 int BTest(void);
+
+// 큰 수의 초기화작업 (변수 선언 후 필수 사용) //
+void BInit(Bigint *Bnum);
 
 // 10진수(string) -> 2진수(bigint) 변환하여 저장 //
 Bigint * BIn(Bigint *Bnum, char * snum);
@@ -42,9 +48,9 @@ void BPrint(Bigint *Bnum);
 
 
 // 두 큰 정수의 비교
-//   1 : B1이 더 큼
-//   0 : 두 수가 같음
-//  -1 : B2이 더 큼
+//   POS : B1이 더 큼
+//   ZRO : 두 수가 같음
+//   NEG : B2이 더 큼
 int BCompare(Bigint *B1, Bigint *B2);
 
 // 두 양수 덧셈 //
