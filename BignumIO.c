@@ -4,6 +4,13 @@
 #include <string.h>
 #include <math.h>
 
+void BInit(Bigint *Bnum)
+{
+	Bnum->num = NULL;
+	Bnum->len = 0;
+	Bnum->sign = ZRO;
+}
+
 Bigint * BIn(Bigint *Bnum, char *snum)
 {
 	char *snum_t;  // 십진수를 역순으로 저장
@@ -12,6 +19,10 @@ Bigint * BIn(Bigint *Bnum, char *snum)
 	int i, j;
 	int n;  // snum의 실시간 최대길이
 	int temp;
+
+	// 초기화된 값이 있으면 덮어씌움 (기존값 제거) //
+	if (Bnum->num != NULL)
+		free(Bnum->num);
 
 	if (snum[0] == '-' || snum[0] == '+')  // 부호가 붙음
 		slen = strlen(snum) - 1;
@@ -65,7 +76,10 @@ Bigint * BIn(Bigint *Bnum, char *snum)
 	else if (snum[0] == '+')
 		Bnum->sign = POS;
 	else      // 부호 안붙음
-		Bnum->sign = POS;
+		if (strcmp(snum, "0") == 0)
+			Bnum->sign = ZRO;
+		else
+			Bnum->sign = POS;
 
 	// 동적 메모리 해제 //
 	free(snum_t);
@@ -83,16 +97,19 @@ void carryIn(unsigned char *snum, int *len)
 	snum[n] = 0;
 
 	// carry in 수행(각 자리마다 두 자리 carry 가능) //
-	for (i=0; i<n+1; i++)
+	for (i=0; i<n; i++)
 	{
 		snum[i+1] += snum[i] / 10;
 		snum[i] = snum[i] % 10;
 	}
-
 	// 가장 높은 자리수에서 carry발생시 len 업뎃 //
-	if (snum[n+1] > 0)
+	if ((int)(snum[n]) >= 10)               // 두 자리 업뎃
+	{
+		snum[n+1] = snum[n] / 10;
+		snum[n] = snum[n] % 10;
 		*len = n+2;
-	else if (snum[n+1] == 0 && snum[n] > 0)
+	}
+	else if (snum[n] > 0)  // 한자리 업뎃
 		*len = n+1;
 }
 
