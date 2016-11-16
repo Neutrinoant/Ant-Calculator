@@ -46,6 +46,9 @@ void BbinPrint(Bigint *Bnum);
 // 큰 수를 10진수로 출력 //
 void BPrint(Bigint *Bnum);
 
+// 큰 수를 10진수로 파일에 출력 //
+void BFilePrint(Bigint *Bnum, const char *fname);
+
 
 // 두 큰 정수의 비교
 //   POS : B1이 더 큼
