@@ -1,6 +1,9 @@
 #include "Bignum.h"
+#include "BignumTl.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#define fname "C:\\Users\\NeutrinoAnt\\Documents\\file.txt"
 
 int BTest(void)
 {
@@ -68,6 +71,11 @@ int BTest(void)
 	BPrint(BIn(&B1, "654321"));
 	BPrint(BIn(&B1, "9673958"));
 	BPrint(BIn(&B1, "93729472957285438563857628"));
+
+	printf("-----------------------------------\n");
+	printf("[1-4] BFilePrint() Test            \n");
+	BPrint(BIn(&B1, "93729472957285438563857628"));
+	BFilePrint(&B1, fname);
 	
 	printf("-----------------------------------\n");
 	printf("[2-1] BAdd() Test                  \n");
@@ -82,5 +90,18 @@ int BTest(void)
 	BPrint(BIn(&B2, "12000000000000000000000000000001"));
 	BPrint(BSub(&B, &B1, &B2));
 
+	printf("-----------------------------------\n");
+	printf("[3-1] BCopy() Test                 \n");
+	BPrint(BIn(&B1, "123456987654"));
+	BPrint(BCopy(&B2, &B1));
+
+	BPrint(BIn(&B1, "0"));
+	BPrint(BCopy(&B2, &B1));
+
+	BPrint(BIn(&B1, "-1234"));
+	BPrint(BCopy(&B2, &B1));
+	BbinPrint(&B2);
+
 	return errnum;
 }
+
