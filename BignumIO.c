@@ -263,3 +263,74 @@ void BPrint(Bigint *Bnum)
 
 	free(snum_t);
 }
+
+void BFilePrint(Bigint *Bnum, const char *fname)
+{
+	unsigned char *snum_t;  // DN을 저장할 변수
+	int slen, blen, Blen;
+	int i, j, k;
+	int n;   // snum의 실시간 최대길이
+	char c;
+	FILE *fp;
+
+	Blen = Bnum->len;
+	blen = 16 * Blen;
+	slen = (int)floor(blen * log10(2.0)) + 1;  // blen, slen에 관한 특수한 부등식 사용
+	snum_t = (unsigned char *)calloc(slen, sizeof(unsigned char));
+	n = 1;
+
+	// 16자리씩 십진수로 변환 //
+	for (i=0; i<Blen; i++)
+	{
+		for (j=0; j<4; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+		
+		for (j=4; j<8; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+		
+		for (j=8; j<12; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+		
+		for (j=12; j<16; j++)
+		{
+			for (k=0; k<n; k++)
+				snum_t[k] = snum_t[k] * 2;
+			snum_t[0] = snum_t[0] + ((Bnum->num[Blen-1-i] & (0x1 << (15-j))) >> (15-j));
+		}
+		carryIn(snum_t, &n); // 자리올림후 n 업뎃
+	}
+
+	// 파일 열기 //
+	if ((fp = fopen(fname, "wt")) == NULL)
+	{
+		printf("[ERROR] File not found...(%s)\n", fname);
+		exit(1);
+	}
+
+	// DN 출력 //
+	if (Bnum->sign == NEG)
+		fprintf(fp, "-");
+
+	for (i=n-1; i>=0; i--)
+		fprintf(fp, "%d", snum_t[i]);
+	fprintf(fp, "\n");
+
+	fclose(fp);
+
+	free(snum_t);
+}
