@@ -190,3 +190,57 @@ Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2)
 	return result;
 }
 
+// 큰 두 양수의 곱셈 //
+Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
+{
+	unsigned int *n, *nb, *ns;
+	int lenb, lens, lenr;
+	int i, j, k;
+	unsigned int temp;
+	
+	int flag = (B1->len > B2->len)? 1 : 0;
+
+	// 곱셈의 순서 결정 //
+	if (flag == 1) {  // B1이 더 길때
+		nb = B1->num, ns = B2->num;
+		lenb = B1->len, lens = B2->len;
+	} else { // (flag == -1)  // B2가 더 길때
+		nb = B2->num, ns = B1->num;
+		lenb = B2->len, lens = B1->len;
+	}
+
+	n = (unsigned int *)calloc(lenb+lens+1, sizeof(unsigned int));
+
+	// 자릿수별로 곱셈하면서 누적 //
+	for (i=0; i<lens; i++)
+	{
+		for (j=0; j<lenb; j++)
+			n[i+j] += nb[j] * ns[i];
+
+		// 누적 후 자리 올림 //
+		for (k=i; k<i+lenb; k++)
+		{
+			temp = n[k];
+			if (temp > 0x00010000)
+			{
+				n[k+1] += temp / 0x00010000;
+				n[k] = temp % 0x00010000;
+			}
+		}
+	}
+
+	// 계산 결과의 길이 계산 //
+	if (n[lenb+lens-1] > 0)
+		lenr = lenb+lens;
+	else
+		lenr = lenb+lens-1;
+	
+	// 초기화된 값이 있으면 덮어씌움 (기존값 제거) //
+	if (result->num != NULL);
+		free(result->num);
+	result->num = n;
+	result->len = lenr;
+	result->sign = POS;
+
+	return result;
+}
