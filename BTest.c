@@ -91,6 +91,28 @@ int BTest(void)
 	BPrint(BSub(&B, &B1, &B2));
 
 	printf("-----------------------------------\n");
+	printf("[2-3] BMul() Test                  \n");
+	BPrint(BIn(&B1, "1"));
+	BPrint(BIn(&B2, "2"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "3"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "4"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "5"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "6"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "7"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "8"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "9"));
+	BPrint(BMul(&B1, &B1, &B2));
+	BPrint(BIn(&B2, "10"));
+	BPrint(BMul(&B1, &B1, &B2));
+	
+	printf("-----------------------------------\n");
 	printf("[3-1] BCopy() Test                 \n");
 	BPrint(BIn(&B1, "123456987654"));
 	BPrint(BCopy(&B2, &B1));
