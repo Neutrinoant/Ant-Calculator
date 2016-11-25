@@ -151,9 +151,14 @@ Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2)
 	// 뺄셈 //
 	n[0] = nb[0] - ns[0] + ((lenb <= 1)? 0 : 0x00010000);     // 큰수-작은수+carry(받음)
 
-	for (i=1; i<lens; i++)
+	for (i=1; i<lens-1; i++)
 		n[i] = nb[i] - ns[i] + 0x00010000 - 1; // 큰수-작은수+carry(받음)-carry(줌)
 	
+	if (lenb > lens)
+		n[lens-1] = nb[lens-1] - ns[lens-1] + 0x00010000 - 1; // 큰수+carry(받음)-carry(줌)
+	else // (lenb == lens)
+		n[lens-1] = nb[lens-1] - ns[lens-1] - 1;              // 큰수-carry(줌)
+
 	for (i=lens; i<lenb-1; i++)
 		n[i] = nb[i] + 0x00010000 - 1;         // 큰수+carry(받음)-carry(줌)
 
@@ -161,7 +166,7 @@ Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2)
 		n[lenb-1] = nb[lenb-1] - 1;            // 큰수-carry(줌)
 
 	// carry in 수행(각 자리마다 최대 한 자리 carry 가능) //
-	for (i=0; i<lenb; i++)
+	for (i=0; i<lenb-1; i++)
 	{
 		n[i+1] += n[i] >> 16;
 		n[i] = n[i] & 0x0000FFFF;
