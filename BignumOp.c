@@ -244,3 +244,88 @@ Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
 
 	return result;
 }
+
+Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
+{
+	int i, j, k;
+	unsigned int *rem;
+	unsigned int *div;
+	unsigned int *divt;
+	unsigned int *num;
+
+	int Blen = B1->len;
+	int dlen = B2->len;
+	int rlen = dlen + 1;
+
+	int sign = B1->sign ^ B2->sign;
+	int curpos = Blen-1;  // 데이터를 가져올 위치
+	int flag;
+	int udist, ldist, dist;
+	
+	num = B1->num;
+	div = B2->num;
+	divt = (unsigned int *)calloc(rlen, sizeof(unsigned int));
+	rem = (unsigned int *)calloc(rlen, sizeof(unsigned int));
+
+	// 1-1. num의 최고자리에서 dlen만큼 가져옴
+	for (i=0; i<dlen; i++)
+		rem[dlen-1-i] = num[curpos--];
+	rlen = dlen;
+
+	// 1-2. 비교 //
+	flag = ZRO;
+	for (i=rlen; i>=0; i--)
+	{
+		flag = rem[i] - div[i];
+		if (flag > 0 || flag < 0)
+			break;
+	}
+	if (flag < 0)  // div가 더 크면 num에서 하나 더 가져옴
+	{
+		for (i=rlen-1; i>=0; i--)
+			rem[i+1] = rem[i];
+		rem[0] = num[curpos--];
+		rlen++;
+	}
+	
+	// 나눗셈 //
+	while (curpos >= 0)
+	{
+		// 2-1. 길이 맞추기 //
+		if (rlen > dlen)
+		{
+			udist = log(1.*rem[rlen-1])/log(2.) + 1;
+			ldist = log(1.*rem[rlen-2])/log(2.) - log(1.*div[rlen-2])/log(2.);
+			dist = udist + ldist;
+
+			
+		}
+		else
+		{
+			dist = log(1.*rem[rlen-1])/log(2.) - log(1.*div[rlen-1])/log(2.);
+		}
+			
+		// 2-1. 비교 //
+		flag = ZRO;
+		for (i=rlen; i>=0; i--)
+		{
+			flag = rem[i] - div[i];
+			if (flag > 0 || flag < 0)
+				break;
+		}
+
+		// 3. 길이 맞추기 //
+
+
+
+	}
+
+
+
+
+	for (i=Blen-1; i>=0; i--)
+	{
+
+	}
+
+}
