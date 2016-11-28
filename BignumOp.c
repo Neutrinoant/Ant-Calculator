@@ -245,6 +245,7 @@ Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
 	return result;
 }
 
+/*
 Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 {
 	int i;
@@ -360,41 +361,6 @@ Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 			if (ldist + dist > 16)
 				dlen++;  // shift 후 길이 재 조정 //
 		}
-
-
-		/*
-		if (rlen > dlen)
-		{
-			// 2-1. 길이 맞추기 1 //
-			udist = floor(log(1.*rem[rlen-1])/log(2.)) + 1;
-			ldist = floor(log(1.*div[dlen-1])/log(2.)) + 1;
-			dist = udist + 16 - ldist;
-			// left shift //
-			temp1 = 0;
-			for (i=dlen-1; i>=0; i--)
-			{
-				temp2 = divt[i];
-				divt[i+1] = temp1 | (temp2 >> (ldist - udist));
-				temp1 = (temp2 << dist) & 0x0000FFFF;
-			}
-			divt[0] = temp1;
-		}
-		else // (rlen == dlen)
-		{
-			udist = floor(log(1.*rem[rlen-1])/log(2.)) + 1;
-			ldist = floor(log(1.*div[dlen-1])/log(2.)) + 1;
-			dist = udist - ldist;
-			// left shift //
-			temp1 = divt[dlen-1] << dist;
-			for (i=dlen-2; i>=0; i--)
-			{
-				temp2 = divt[i];
-				divt[i+1] = temp1 | (temp2 >> (16 - dist)); //  16 - dist == ldist - udist (mod 16)  생각해보자
-				temp1 = (temp2 << dist) & 0x0000FFFF;
-			}
-			divt[0] = temp1;
-		}
-		*/
 		
 		// 2-2. 길이 맞추기 2 (세부길이) //
 
@@ -447,8 +413,10 @@ Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 		// 뺄셈 후 길이 재 조정 (0은 길이 0으로 취급) //
 		i = rlen-1;
 		for (i=rlen-1; i>=0; i--)
-			if (rem[i] == 0)
+			if (rem[i] == 0) {
 				rlen--;
+				break;
+			}
 		
 		// 2-4. 몫을 계산 //
 		quo[curpos+1] = quo[curpos+1] | (1 << dlowbound);
@@ -468,4 +436,146 @@ Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 	result->sign = sign;
 	
 	return result;
+}
+
+*/
+
+Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
+{
+	int i;
+	unsigned int *rem;
+	unsigned int *div;
+	unsigned int *divt;
+	unsigned int *num;
+	unsigned int *quo;
+	
+	int temp1, temp2;  // 부호가 필요해서
+
+	int Blen = B1->len;
+	int Dlen = B2->len;
+	int dlen = Dlen;  // 임시 divisor length
+	int rlen;
+	int qlen;
+	int nBlock;
+
+	int sign = B1->sign ^ B2->sign;
+	int curpos;   // 데이터를 가져올 위치
+	int flag;
+	int udist, ldist, dist;
+	int dlow;    // div의 하한 index
+
+	int Bf = (Blen > Dlen);
+	int Sf;
+	int Cf;
+	
+	rem = (unsigned int *)calloc(dlen+1, sizeof(unsigned int));
+	
+	div = B2->num;
+
+	divt = (unsigned int *)calloc(dlen+1, sizeof(unsigned int));
+	for (i=0; i<dlen; i++)
+		divt[i] = div[i];   // div를 divt에 복사
+	dlow = 0; // divt의 위치를 옮길 때 하한의 위치
+
+	num = B1->num;
+	quo = (unsigned int *)calloc(Blen-dlen+1, sizeof(unsigned int));
+
+	// 0으로 나누기는 금지 //
+	if (dlen == 1 && div[0] == 0)
+		return BIn(result, "NAN");
+
+	// Divisor의 길이가 더 길때 //
+	if (Bf == -1)
+		return BIn(result, "0");
+
+	// Default : num에서 div의 크기만큼 자르기 //
+	curpos = Blen-1;
+	for (i=0; i<dlen; i++)
+		rem[dlen-1-i] = num[curpos--];
+	rlen = dlen;
+
+	// Bignum의 길이가 더 길때 //
+	while (Bf != 0)
+	{
+		// 세부길이 계산 //
+		ldist = (int)floor(log(1.*divt[dlen-1])/log(2.)) + 1;
+		if (rlen == 1 && rem[0] == 0)  // rem이 0이면
+		{
+			udist = 0;
+			dist = udist - ldist + (rlen - dlen) * 16;
+			Sf = dist;
+		}
+		else
+		{
+			udist = (int)(log(1.*rem[rlen-1])/log(2.)) + 1;
+			dist = udist - ldist + (rlen - dlen) * 16;
+			Sf = dist;
+		}
+
+		if (Sf < 0 && dlow >= abs(dist))
+		{
+			// dist 만큼 div를 rshift //
+			temp1 = divt[0] >> (-dist);
+			for (i=1; i<dlen; i++)
+			{
+				temp2 = divt[i];
+				divt[i-1] = temp1 | ((temp2 << (16 - (-dist))) & 0x0000FFFF);
+				temp1 = temp2 >> (-dist);
+			}
+			divt[dlen-1] = temp1;
+			dlow = dlow - (-dist);
+
+			// shift 후 길이 재 조정 //
+			if (divt[dlen-1] == 0)
+				dlen--;
+		}
+		else if (Sf < 0 && dlow < abs(dist))
+		{
+			if (curpos < 0)
+				break;  //////////////조심!!
+
+			// 블록 1개 추가 //
+			nBlock = 1;
+			rlen = rlen + nBlock;
+			for (i=rlen-1; i>=nBlock; i--)
+				rem[rlen-1] = rem[rlen-1-nBlock];
+			rem[0] = num[curpos--];
+
+			Bf = (Blen > Dlen);
+
+			if (rlen > dlen)
+			{
+				// dist만큼 div를 lshift (여기 다시한번 주의깊게 보자) //
+				temp1 = divt[rlen-1] << ((udist - ldist + 16) % 16);  // for positive modulo
+				for (i=rlen-2; i>=0; i--)
+				{
+					temp2 = divt[i];
+					divt[i+1] = temp1 | (temp2 >> ((ldist - udist + 16) % 16));  // for positive modulo
+					temp1 = (temp2 << abs(dist)) & 0x0000FFFF;
+				}
+				divt[0] = temp1;
+				dlow = dlow + abs(dist);
+
+				if (ldist + abs(dist) > 16)
+					dlen++;  // shift 후 길이 재 조정 //
+			}
+		}
+
+
+		/// 덜했음
+
+	}
+
+
+
+	while (1)
+	{
+		
+
+
+
+
+	}
+
+
 }
