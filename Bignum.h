@@ -71,6 +71,9 @@ Bigint * BSub(Bigint *result, Bigint *B1, Bigint *B2);
 // 두 수 곱셈 //
 Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2);
 
+// 큰 수를 비트단위로 shift //
+Bigint * RLShift(Bigint *B, int dist);
+
 // 두 수 나눗셈(몫 반환) //
 Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2);
 
