@@ -223,8 +223,8 @@ Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
 			temp = n[k];
 			if (temp > 0x00010000)
 			{
-				n[k+1] += temp / 0x00010000;
-				n[k] = temp % 0x00010000;
+				n[k+1] += temp >> 16;
+				n[k] = temp & 0x0000FFFF;
 			}
 		}
 	}
@@ -247,85 +247,225 @@ Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
 
 Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 {
-	int i, j, k;
+	int i;
 	unsigned int *rem;
 	unsigned int *div;
 	unsigned int *divt;
 	unsigned int *num;
+	unsigned int *quo;
+	
+	int temp1, temp2;  // 부호가 필요해서
 
 	int Blen = B1->len;
 	int dlen = B2->len;
-	int rlen = dlen + 1;
+	int rlen;
+	int qlen;
+	int nBlock;
 
 	int sign = B1->sign ^ B2->sign;
 	int curpos = Blen-1;  // 데이터를 가져올 위치
 	int flag;
 	int udist, ldist, dist;
+	int dlowbound;
 	
-	num = B1->num;
+	rem = (unsigned int *)calloc(dlen+1, sizeof(unsigned int));
+	
 	div = B2->num;
-	divt = (unsigned int *)calloc(rlen, sizeof(unsigned int));
-	rem = (unsigned int *)calloc(rlen, sizeof(unsigned int));
 
-	// 1-1. num의 최고자리에서 dlen만큼 가져옴
+	divt = (unsigned int *)calloc(dlen+1, sizeof(unsigned int));
+	for (i=0; i<dlen; i++)
+		divt[i] = div[i];   // div를 divt에 복사
+	dlowbound = 0; // divt의 위치를 옮길 때 하한의 위치
+
+	num = B1->num;
+	quo = (unsigned int *)calloc(Blen-dlen+1, sizeof(unsigned int));
+
+
+
+	// rem와 div의 길이를 같게 세팅  //
+
+	// 1-1. num의 최고자리에서 dlen만큼 가져옴 (필요)
 	for (i=0; i<dlen; i++)
 		rem[dlen-1-i] = num[curpos--];
 	rlen = dlen;
 
-	// 1-2. 비교 //
-	flag = ZRO;
-	for (i=rlen; i>=0; i--)
-	{
-		flag = rem[i] - div[i];
-		if (flag > 0 || flag < 0)
-			break;
-	}
-	if (flag < 0)  // div가 더 크면 num에서 하나 더 가져옴
-	{
-		for (i=rlen-1; i>=0; i--)
-			rem[i+1] = rem[i];
-		rem[0] = num[curpos--];
-		rlen++;
-	}
-	
 	// 나눗셈 //
-	while (curpos >= 0)
+	while (1)
 	{
-		// 2-1. 길이 맞추기 //
+		ldist = (int)floor(log(1.*divt[dlen-1])/log(2.)) + 1;
+
+		if (rlen == 0) {
+			udist = 0;
+			dist = udist - ldist + (1 - dlen) * 16;
+		} else {
+			udist = (int)(log(1.*rem[rlen-1])/log(2.)) + 1;
+			dist = udist - ldist + (rlen - dlen) * 16;  // assumption : dist < 16
+		}
+
+		// 2-1. 길이 맞추기 1 //
+
+		// 필요할때 divt를 이동시킬 수 없거나, rem이 부족하면, 블록을 추가 //
+		if ((dist < 0 && dlowbound+dist < 0) || (dist==0 && dlowbound==0)) 
+		{
+			if (dist == 0)
+				nBlock = 1;
+			else if (dist%16 == 0)
+				nBlock = dist / 16;
+			else
+				nBlock = dist / 16 + 1;
+
+			if (curpos + 1 - nBlock < 0)
+				break;  // 블록을 추가할 수 없어, 더이상 나눌 수 없으므로 중단
+
+			rlen = rlen + nBlock;
+			for (i=rlen-1; i>=nBlock; i--)
+				rem[i] = rem[i-nBlock];
+
+			for (i=nBlock-1; i>=0; i--)
+				rem[i] = num[curpos--];
+
+			// update dist 
+			udist = (int)(log(1.*rem[rlen-1])/log(2.)) + 1;
+			ldist = (int)(log(1.*divt[dlen-1])/log(2.)) + 1;
+			dist = udist - ldist + (rlen - dlen) * 16; 
+		}
+		else if (dist < 0 && dlowbound+dist >= 0)  // 거리가 음수지만 div를 right shift가능하다면 해줌
+		{
+			temp1 = divt[0] >> (-dist);
+			for (i=1; i<dlen; i++)
+			{
+				temp2 = divt[i];
+				divt[i-1] = temp1 | ((temp2 << (16 - (-dist))) & 0x0000FFFF);
+				temp1 = temp2 >> (-dist);
+			}
+			divt[dlen-1] = temp1;
+			dlowbound = dlowbound - (-dist);
+
+			if (divt[dlen-1] == 0)
+				dlen--;  // shift 후 길이 재 조정 //
+		}
+		
+		if (dist > 0)  // 거리가 양수이면 div를 left shift
+		{
+			temp1 = divt[rlen-1] << ((udist - ldist + 16) % 16);  // for positive modulo
+			for (i=rlen-2; i>=0; i--)
+			{
+				temp2 = divt[i];
+				divt[i+1] = temp1 | (temp2 >> ((ldist - udist + 16) % 16));  // for positive modulo
+				temp1 = (temp2 << dist) & 0x0000FFFF;
+			}
+			divt[0] = temp1;
+			dlowbound = dlowbound + dist;
+
+			if (ldist + dist > 16)
+				dlen++;  // shift 후 길이 재 조정 //
+		}
+
+
+		/*
 		if (rlen > dlen)
 		{
-			udist = log(1.*rem[rlen-1])/log(2.) + 1;
-			ldist = log(1.*rem[rlen-2])/log(2.) - log(1.*div[rlen-2])/log(2.);
-			dist = udist + ldist;
+			// 2-1. 길이 맞추기 1 //
+			udist = floor(log(1.*rem[rlen-1])/log(2.)) + 1;
+			ldist = floor(log(1.*div[dlen-1])/log(2.)) + 1;
+			dist = udist + 16 - ldist;
+			// left shift //
+			temp1 = 0;
+			for (i=dlen-1; i>=0; i--)
+			{
+				temp2 = divt[i];
+				divt[i+1] = temp1 | (temp2 >> (ldist - udist));
+				temp1 = (temp2 << dist) & 0x0000FFFF;
+			}
+			divt[0] = temp1;
+		}
+		else // (rlen == dlen)
+		{
+			udist = floor(log(1.*rem[rlen-1])/log(2.)) + 1;
+			ldist = floor(log(1.*div[dlen-1])/log(2.)) + 1;
+			dist = udist - ldist;
+			// left shift //
+			temp1 = divt[dlen-1] << dist;
+			for (i=dlen-2; i>=0; i--)
+			{
+				temp2 = divt[i];
+				divt[i+1] = temp1 | (temp2 >> (16 - dist)); //  16 - dist == ldist - udist (mod 16)  생각해보자
+				temp1 = (temp2 << dist) & 0x0000FFFF;
+			}
+			divt[0] = temp1;
+		}
+		*/
+		
+		// 2-2. 길이 맞추기 2 (세부길이) //
 
-			
-		}
-		else
+		flag = 0;
+		for (i=rlen-1; i>=0; i--)   // 크기 비교 후 결정
 		{
-			dist = log(1.*rem[rlen-1])/log(2.) - log(1.*div[rlen-1])/log(2.);
-		}
-			
-		// 2-1. 비교 //
-		flag = ZRO;
-		for (i=rlen; i>=0; i--)
-		{
-			flag = rem[i] - div[i];
+			flag = rem[i] - divt[i];
 			if (flag > 0 || flag < 0)
 				break;
 		}
 
-		// 3. 길이 맞추기 //
+		if (flag < 0)  // rem이 div보다 작으면, div를 1회 shift
+		{
+			if (dlowbound == 0)
+				continue;   // div를 shift할 수 없으면 (2-1)로.
 
+			temp1 = divt[0] >> 1;
+			for (i=1; i<dlen; i++)
+			{
+				temp2 = divt[i];
+				divt[i-1] = temp1 | ((temp2 & 0x1) << 15);
+				temp1 = temp2 >> 1;
+			}
+			divt[dlen-1] = temp1;
+			dlowbound = dlowbound - 1;
 
+			// shift 후 길이 재 조정 //
+			if (divt[dlen-1] == 0)
+				dlen--;
+		}
 
+		// 2-3. 뺄셈 //
+
+		flag = 0;  // carryin 역할
+		for (i=0; i<rlen; i++)
+		{
+			temp1 = rem[i] - divt[i] - flag;
+			if (temp1 < 0)
+			{
+				flag = 1;
+				rem[i] = temp1 + 0x00010000;  // carry in
+			}
+			else
+			{
+				flag = 0;
+				rem[i] = temp1;
+			}
+		}
+
+		// 뺄셈 후 길이 재 조정 (0은 길이 0으로 취급) //
+		i = rlen-1;
+		for (i=rlen-1; i>=0; i--)
+			if (rem[i] == 0)
+				rlen--;
+		
+		// 2-4. 몫을 계산 //
+		quo[curpos+1] = quo[curpos+1] | (1 << dlowbound);
+		printf("quo[%d] = %d\n", curpos+1, quo[curpos+1]);
 	}
 
+	if (quo[Blen-dlen] > 0)
+		qlen = Blen-dlen+1;
+	else
+		qlen = Blen-dlen;
 
-
-
-	for (i=Blen-1; i>=0; i--)
-	{
-
-	}
-
+	// 초기화된 값이 있으면 덮어씌움 (기존값 제거) //
+	if (result->num != NULL);
+		free(result->num);
+	result->num = quo;
+	result->len = qlen;
+	result->sign = sign;
+	
+	return result;
 }
