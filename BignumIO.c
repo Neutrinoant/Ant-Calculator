@@ -24,6 +24,16 @@ Bigint * BIn(Bigint *Bnum, char *snum)
 	if (Bnum->num != NULL)
 		free(Bnum->num);
 
+	// NAN의 정의 //
+	if (strcmp(snum, "NAN") == 0)
+	{
+		Bnum->num = (unsigned int *)malloc(sizeof(char));
+		Bnum->num[0] = 0xFFFF0000;
+		Bnum->len = -1;
+		Bnum->sign = ZRO;
+		return Bnum;
+	}
+
 	if (snum[0] == '-' || snum[0] == '+')  // 부호가 붙음
 		slen = strlen(snum) - 1;
 	else                                   // 부호 안붙음
