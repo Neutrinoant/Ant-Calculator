@@ -245,6 +245,7 @@ Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
 	return result;
 }
 
+// RShift, LShift로 쪼개자!!!!!!!!!!!!!!!!!!!!! //
 Bigint * RLShift(Bigint *B, int dist)
 {
 	unsigned int *num = B->num;
@@ -265,7 +266,7 @@ Bigint * RLShift(Bigint *B, int dist)
 	{
 		q = (dist + tdist - 1) / 16;  // 블록 사이 이동 횟수
 
-		result = (unsigned int *)calloc(len+q, sizeof(unsigned int));
+		result = (unsigned int *)calloc(len+1+q, sizeof(unsigned int));
 		for (i=0; i<len; i++)
 			result[i] = num[i];
 
@@ -273,7 +274,7 @@ Bigint * RLShift(Bigint *B, int dist)
 		if ((dist%16) <= (16-tdist))
 		{
 			// dist만큼 div를 lshift //
-			temp1 = result[len-1] << (dist % 16);
+			temp1 = (result[len-1] << (dist % 16)) & 0x0000FFFF;
 			for (i=len-2; i>=0; i--)
 			{
 				temp2 = result[i];
@@ -289,7 +290,7 @@ Bigint * RLShift(Bigint *B, int dist)
 		{
 			// dist만큼 div를 lshift //
 			result[len-1+q] = result[len-1] >> (16 - (dist % 16));
-			temp1 = result[len-1] << (dist % 16);
+			temp1 = (result[len-1] << (dist % 16)) & 0x0000FFFF;
 			for (i=len-2; i>=0; i--)
 			{
 				temp2 = result[i];
@@ -322,7 +323,7 @@ Bigint * RLShift(Bigint *B, int dist)
 
 		len = len + (dist + tdist - 16) / 16;  // 길이 조정
 
-		result = (unsigned int *)calloc(len, sizeof(unsigned int));
+		result = (unsigned int *)calloc(len+1, sizeof(unsigned int));
 		for (i=0; i<len; i++)
 			result[i] = num[i];
 	}
@@ -336,16 +337,24 @@ Bigint * RLShift(Bigint *B, int dist)
 
 Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 {
+	Bigint Div;
+
 	unsigned int *num = B1->num;
 	unsigned int *div = B2->num;
 	unsigned int *divt;
+	unsigned int *quo;
 
 	int nlen = B1->len;
 	int dlen = B2->len;
+	int qlen;
 	
 	int udist, ldist, dist;
-	int dlow;    // div의 하한 index
+	int dlowbit;    // div의 하한 세부index
+	int dlowlen;    // div의 하한 index
 	int i;
+	int flag;
+	int carryout;
+	int temp;
 
 	// 0으로 나누기는 금지 //
 	if (dlen == 1 && div[0] == 0)
@@ -355,14 +364,98 @@ Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 	if (BCompare(B1, B2) == -1)
 		return BIn(result, "0");
 
-	divt = (unsigned int *)calloc(nlen, sizeof(unsigned int));
+	quo = (unsigned int *)calloc(nlen-dlen+2, sizeof(unsigned int));
+
+	divt = (unsigned int *)calloc(dlen, sizeof(unsigned int));
 	for (i=0; i<dlen; i++)
 		divt[i] = div[i];   // div를 divt에 복사
-	dlow = 0; // divt의 위치를 옮길 때 하한의 위치
+	
+	dlowbit = 0;
+	dlowlen = 0;
 
-	ldist = (int)floor(log(1.*divt[dlen-1])/log(2.)) + 1;
-	udist = (int)(log(1.*num[nlen-1])/log(2.)) + 1;
-	dist = udist - ldist + (nlen - dlen) * 16;
+	BInit(&Div);
+	Div.num = divt;
+	Div.len = dlen;
+	Div.sign = POS;
 
-	// 미완성 //
+	ldist = (int)floor(log(1.* Div.num[Div.len-1])/log(2.)) + 1;
+	udist = (int)(log(1.* num[nlen-1])/log(2.)) + 1;
+	dist = udist - ldist + (nlen - Div.len) * 16;
+
+	RLShift(&Div, dist);
+	dlowbit = dlowbit + dist;
+	dlowlen = dlowbit / 16;
+
+	while (1)
+	{
+		// 비교 //
+		for (i=nlen-1; i>=dlowlen; i--)
+		{
+			flag = num[i] - Div.num[i];
+			if (flag != 0)
+				break;
+		}
+		if (flag < 0)  // div가 더 클때
+		{
+			if (dlowbit == 0)  // 더이상 나눌 수 없으면 종료
+				break;
+			else
+			{
+				RLShift(&Div, -1);  // 그 외엔 shift
+				dlowbit = dlowbit - 1;
+				dlowlen = dlowbit / 16;
+			}
+		}
+
+		// 뺄셈 //
+		carryout = 0;
+		for (i=dlowlen; i<nlen; i++)
+		{
+			temp = num[i] - Div.num[i] - carryout;
+			if (temp < 0)
+			{
+				carryout = 1;
+				num[i] = temp + 0x00010000;
+			}
+			else
+			{
+				carryout = 0;
+				num[i] = temp;
+			}
+		}
+		quo[dlowlen] += 1 << (dlowbit % 16);  // 몫을 계산
+
+		// 뺄셈 후 길이 조정 //
+		for (i=nlen-1; i>=0; i--)
+		{
+			if (num[i] != 0)
+				break;
+			nlen--;
+		}
+		if (nlen == 0)
+			break;  // 나눗셈이 종료되었으면 끝
+
+		// div의 위치 조정 //
+		ldist = (int)floor(log(1.*Div.num[Div.len-1])/log(2.)) + 1;
+		udist = (int)(log(1.*num[nlen-1])/log(2.)) + 1;
+		dist = udist - ldist + (nlen - Div.len) * 16;
+
+		if (dlowbit - abs(dist) < 0)
+			break;
+		else
+		{
+			RLShift(&Div, dist);
+			dlowbit = dlowbit - abs(dist);
+			dlowlen = dlowbit / 16;
+		}
+	}
+
+	qlen = B1->len - B2->len + 1;
+	if (quo[qlen-1] == 0)
+		qlen--;
+	result->num = quo;
+	result->len = qlen;
+	result->sign = B1->sign ^ B2->sign;
+
+	return result;
 }
