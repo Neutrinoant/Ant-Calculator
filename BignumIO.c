@@ -221,6 +221,12 @@ void BPrint(Bigint *Bnum)
 	int i, j, k;
 	int n;   // snum의 실시간 최대길이
 
+	if (Bnum->len == -1)
+	{
+		printf("NAN\n");
+		return;
+	}
+
 	Blen = Bnum->len;
 	blen = 16 * Blen;
 	slen = (int)floor(blen * log10(2.0)) + 1;  // blen, slen에 관한 특수한 부등식 사용
@@ -282,6 +288,19 @@ void BFilePrint(Bigint *Bnum, const char *fname)
 	int n;   // snum의 실시간 최대길이
 	char c;
 	FILE *fp;
+	
+	if (Bnum->len == -1)
+	{
+		// 파일 열기 //
+		if ((fp = fopen(fname, "wt")) == NULL)
+		{
+			printf("[ERROR] File not found...(%s)\n", fname);
+			exit(1);
+		}
+		fprintf(fp, "NAN\n");
+		fclose(fp);
+		return;
+	}
 
 	Blen = Bnum->len;
 	blen = 16 * Blen;
