@@ -221,7 +221,7 @@ Bigint * BMul(Bigint *result, Bigint *B1, Bigint *B2)
 		for (k=i; k<i+lenb; k++)
 		{
 			temp = n[k];
-			if (temp > 0x00010000)
+			if (temp >= 0x00010000)
 			{
 				n[k+1] += temp >> 16;
 				n[k] = temp & 0x0000FFFF;
