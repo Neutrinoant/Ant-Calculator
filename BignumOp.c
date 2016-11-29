@@ -455,7 +455,7 @@ Bigint * BDiv(Bigint *result, Bigint *B1, Bigint *B2)
 		qlen--;
 	result->num = quo;
 	result->len = qlen;
-	result->sign = B1->sign ^ B2->sign;
+	result->sign = B1->sign * B2->sign;
 
 	return result;
 }
